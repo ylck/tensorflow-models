@@ -25,30 +25,42 @@ import tensorflow as tf
 
 from inception import inception_distributed_train
 from inception.imagenet_data import ImagenetData
+import json
+import os
 
 FLAGS = tf.app.flags.FLAGS
 
 
 def main(unused_args):
-  assert FLAGS.job_name in ['ps', 'worker'], 'job_name must be ps or worker'
-
   # Extract all the hostnames for the ps and worker jobs to construct the
   # cluster spec.
-  ps_hosts = FLAGS.ps_hosts.split(',')
-  worker_hosts = FLAGS.worker_hosts.split(',')
-  tf.logging.info('PS hosts are: %s' % ps_hosts)
-  tf.logging.info('Worker hosts are: %s' % worker_hosts)
 
-  cluster_spec = tf.train.ClusterSpec({'ps': ps_hosts,
-                                       'worker': worker_hosts})
-  server = tf.train.Server(
-      {'ps': ps_hosts,
-       'worker': worker_hosts},
-      job_name=FLAGS.job_name,
-      task_index=FLAGS.task_id,
-      protocol=FLAGS.protocol)
+  tf_config_json = os.environ.get("TF_CONFIG", "{}")
+  tf_config = json.loads(tf_config_json)
+  tf.logging.info("tf_config: %s", tf_config)
 
-  if FLAGS.job_name == 'ps':
+  task = tf_config.get("task", {})
+  tf.logging.info("task: %s", task)
+
+  cluster_spec = tf_config.get("cluster", {})
+  tf.logging.info("cluster_spec: %s", cluster_spec)
+
+  if cluster_spec:
+      cluster_spec_object = tf.train.ClusterSpec(cluster_spec)
+      server_def = tf.train.ServerDef(
+          cluster=cluster_spec_object.as_cluster_def(),
+          protocol="grpc",
+          job_name=task["type"],
+          task_index=task["index"])
+
+      tf.logging.info("server_def: %s", server_def)
+
+      tf.logging.info("Building server.")
+      # Create and start a server for the local task.
+      server = tf.train.Server(server_def)
+      tf.logging.info("Finished building server.")
+
+  if task["type"] == 'ps':
     # `ps` jobs wait for incoming connections from the workers.
     server.join()
   else:
@@ -56,7 +68,7 @@ def main(unused_args):
     dataset = ImagenetData(subset=FLAGS.subset)
     assert dataset.data_files()
     # Only the chief checks for or creates train_dir.
-    if FLAGS.task_id == 0:
+    if task["index"] == 0:
       if not tf.gfile.Exists(FLAGS.train_dir):
         tf.gfile.MakeDirs(FLAGS.train_dir)
     inception_distributed_train.train(server.target, dataset, cluster_spec)

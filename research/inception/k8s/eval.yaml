@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: tensorflow-eval
+  labels:
+    app: tensorflow-eval
+spec:
+  containers:
+    - image: banzaicloud/tensorflow-inception-example:v0.1
+      name: tensorflow-eval
+      command: ["bazel-bin/inception/imagenet_eval"]
+      args: ["--checkpoint_dir=/efs/train", "--eval_dir=/efs/eval", "--data_dir=/efs/image-data", "--num_gpus=0", "--subset=validation"]
+      volumeMounts:
+          - name: efs-pvc
+            mountPath: "/efs"
+  volumes:
+    - name: efs-pvc
+      persistentVolumeClaim:
+        claimName: efs
