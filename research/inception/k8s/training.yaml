@@ -23,13 +23,6 @@ spec:
           restartPolicy: OnFailure
     - replicas: 2
       tfReplicaType: PS
-      # template:
-      #   spec:
-      #     containers:
-      #       - image: banzaicloud/tensorflow-inception-example:v0.1
-      #         name: tensorflow
-      #         command: ["bazel-bin/inception/imagenet_distributed_train"]
-      #         args: ["--batch_size=32", "--num_gpus=0", "--data_dir=/efs/image-data", "--train_dir=/efs/train"]
   tensorboard:
     logDir: /efs/train
     serviceType: LoadBalancer
@@ -44,8 +37,3 @@ spec:
     chief:
       replicaName: WORKER
       replicaIndex: 0
-
-      # template:
-      #   spec:
-      #     containers:
-      #       - image: banzaicloud/tensorflow
