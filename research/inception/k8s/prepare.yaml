@@ -8,7 +8,7 @@ spec:
   containers:
   - name: tensorflow-prepare
     image: banzaicloud/tensorflow-inception-example:v0.1
-    command: ["bazel-bin/inception/download_and_preprocess_imagenet"]
+    command: ["bazel-bin/inception/download_and_preprocess_flowers"]
     args: ["/efs/image-data"]
     volumeMounts:
         - name: efs-pvc
