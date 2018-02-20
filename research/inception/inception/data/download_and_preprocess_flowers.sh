@@ -52,8 +52,9 @@ CURRENT_DIR=$(pwd)
 cd "${DATA_DIR}"
 TARBALL="flower_photos.tgz"
 if [ ! -f ${TARBALL} ]; then
-  echo "Downloading flower data set."
+  echo "$(date) - Downloading flower data set."
   curl -o ${TARBALL} "${DATA_URL}"
+  echo "$(date) - dataset downloaded"
 else
   echo "Skipping download of flower data."
 fi
@@ -65,12 +66,15 @@ VALIDATION_DIRECTORY="${SCRATCH_DIR}/validation"
 # Expands the data into the flower_photos/ directory and rename it as the
 # train directory.
 tar xf flower_photos.tgz
+echo "$(date) - dataset unpacked"
 rm -rf "${TRAIN_DIRECTORY}" "${VALIDATION_DIRECTORY}"
 mv flower_photos "${TRAIN_DIRECTORY}"
+echo "$(date) - dataset moved to ${TRAIN_DIRECTORY}"
 
 # Generate a list of 5 labels: daisy, dandelion, roses, sunflowers, tulips
 LABELS_FILE="${SCRATCH_DIR}/labels.txt"
 ls -1 "${TRAIN_DIRECTORY}" | grep -v 'LICENSE' | sed 's/\///' | sort > "${LABELS_FILE}"
+echo "$(date) - labels file created"
 
 # Generate the validation data set.
 while read LABEL; do
@@ -78,9 +82,11 @@ while read LABEL; do
   TRAIN_DIR_FOR_LABEL="${TRAIN_DIRECTORY}/${LABEL}"
 
   # Move the first randomly selected 100 images to the validation set.
+  echo "$(date) - create validation data"
   mkdir -p "${VALIDATION_DIR_FOR_LABEL}"
   VALIDATION_IMAGES=$(ls -1 "${TRAIN_DIR_FOR_LABEL}" | shuf | head -100)
   for IMAGE in ${VALIDATION_IMAGES}; do
+    echo "$(date) - move image ${TRAIN_DIRECTORY}/${LABEL}/${IMAGE} to validation data"
     mv -f "${TRAIN_DIRECTORY}/${LABEL}/${IMAGE}" "${VALIDATION_DIR_FOR_LABEL}"
   done
 done < "${LABELS_FILE}"
