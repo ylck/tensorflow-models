@@ -90,12 +90,12 @@ RMSPROP_MOMENTUM = 0.9             # Momentum in RMSProp.
 RMSPROP_EPSILON = 1.0              # Epsilon term for RMSProp.
 
 
-def train(target, dataset, cluster_spec):
+def train(target, dataset, cluster_spec, taskId):
   """Train Inception on a dataset for a number of steps."""
   # Number of workers and parameter servers are inferred from the workers and ps
   # hosts string.
-  num_workers = len(cluster_spec.as_dict()['worker'])
-  num_parameter_servers = len(cluster_spec.as_dict()['ps'])
+  num_workers = len(cluster_spec['worker'])
+  num_parameter_servers = len(cluster_spec['ps'])
   # If no value is given, num_replicas_to_aggregate defaults to be the number of
   # workers.
   if FLAGS.num_replicas_to_aggregate == -1:
@@ -110,10 +110,10 @@ def train(target, dataset, cluster_spec):
 
   # Choose worker 0 as the chief. Note that any worker could be the chief
   # but there should be only one chief.
-  is_chief = (FLAGS.task_id == 0)
+  is_chief = (taskId == 0)
 
   # Ops are assigned to worker by default.
-  with tf.device('/job:worker/task:%d' % FLAGS.task_id):
+  with tf.device('/job:worker/task:%d' % taskId):
     # Variables and its related init/assign ops are assigned to ps.
     with slim.scopes.arg_scope(
         [slim.variables.variable, slim.variables.global_step],
@@ -287,7 +287,7 @@ def train(target, dataset, cluster_spec):
             format_str = ('Worker %d: %s: step %d, loss = %.2f'
                           '(%.1f examples/sec; %.3f  sec/batch)')
             tf.logging.info(format_str %
-                            (FLAGS.task_id, datetime.now(), step, loss_value,
+                            (taskId, datetime.now(), step, loss_value,
                              examples_per_sec, duration))
 
           # Determine if the summary_op should be run on the chief worker.

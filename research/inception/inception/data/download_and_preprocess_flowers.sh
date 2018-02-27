@@ -41,9 +41,12 @@ fi
 
 # Create the output and temporary directories.
 DATA_DIR="${1%/}"
-SCRATCH_DIR="${DATA_DIR}/raw-data"
+OUTPUT_DIRECTORY="${2%/}"
+RAW_DATA_DIR="raw-data"
+SCRATCH_DIR="${DATA_DIR}/${RAW_DATA_DIR}"
 mkdir -p "${DATA_DIR}"
 mkdir -p "${SCRATCH_DIR}"
+mkdir -p "${OUTPUT_DIRECTORY}"
 WORK_DIR="$0.runfiles/inception/inception"
 
 # Download the flowers data.
@@ -82,11 +85,10 @@ while read LABEL; do
   TRAIN_DIR_FOR_LABEL="${TRAIN_DIRECTORY}/${LABEL}"
 
   # Move the first randomly selected 100 images to the validation set.
-  echo "$(date) - create validation data"
+  echo "$(date) - create validation data for: ${VALIDATION_DIR_FOR_LABEL}"
   mkdir -p "${VALIDATION_DIR_FOR_LABEL}"
   VALIDATION_IMAGES=$(ls -1 "${TRAIN_DIR_FOR_LABEL}" | shuf | head -100)
   for IMAGE in ${VALIDATION_IMAGES}; do
-    echo "$(date) - move image ${TRAIN_DIRECTORY}/${LABEL}/${IMAGE} to validation data"
     mv -f "${TRAIN_DIRECTORY}/${LABEL}/${IMAGE}" "${VALIDATION_DIR_FOR_LABEL}"
   done
 done < "${LABELS_FILE}"
@@ -94,9 +96,17 @@ done < "${LABELS_FILE}"
 # Build the TFRecords version of the image data.
 cd "${CURRENT_DIR}"
 BUILD_SCRIPT="${WORK_DIR}/build_image_data"
-OUTPUT_DIRECTORY="${DATA_DIR}"
 "${BUILD_SCRIPT}" \
   --train_directory="${TRAIN_DIRECTORY}" \
   --validation_directory="${VALIDATION_DIRECTORY}" \
   --output_directory="${OUTPUT_DIRECTORY}" \
   --labels_file="${LABELS_FILE}"
+
+cd "${DATA_DIR}"
+#echo "$(date) - copy ${RAW_DATA_DIR} to ${OUTPUT_DIRECTORY}"
+#cp -a "${RAW_DATA_DIR}" "${OUTPUT_DIRECTORY}"
+
+
+echo "$(date) - cleaning temp data from: ${RAW_DATA_DIR}"
+rm -rf "${RAW_DATA_DIR}"
+rm -f flower_photos.tgz

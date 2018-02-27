@@ -7,14 +7,22 @@ metadata:
 spec:
   containers:
   - name: tensorflow-prepare
-    image: banzaicloud/tensorflow-inception-example:v0.1
+    image: banzaicloud/tensorflow-inception-example:v0.18
     command: ["bazel-bin/inception/download_and_preprocess_flowers"]
-    args: ["/efs/image-data"]
+    args: ["/img-prep/tmp", "/efs/image-data" ]
+    volumeMounts:
+        - name: tmp-pvc
+          mountPath: "/img-prep"
     volumeMounts:
         - name: efs-pvc
           mountPath: "/efs"
+    securityContext:
+          privileged: true
   restartPolicy: "Never"
   volumes:
+    - name: tmp-pvc
+      hostPath:
+        path: /img-prep
     - name: efs-pvc
       persistentVolumeClaim:
-        claimName: efs
+        claimName: azure-files

@@ -71,7 +71,7 @@ def main(unused_args):
     if task["index"] == 0:
       if not tf.gfile.Exists(FLAGS.train_dir):
         tf.gfile.MakeDirs(FLAGS.train_dir)
-    inception_distributed_train.train(server.target, dataset, cluster_spec)
+    inception_distributed_train.train(server.target, dataset, cluster_spec, task["index"])
 
 if __name__ == '__main__':
   tf.logging.set_verbosity(tf.logging.INFO)

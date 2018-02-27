@@ -1,4 +1,4 @@
-FROM gcr.io/tensorflow/tensorflow:latest-devel
+FROM gcr.io/tensorflow/tensorflow:latest-devel-gpu
 
 ADD inception /training
 

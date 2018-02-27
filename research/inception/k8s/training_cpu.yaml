@@ -4,12 +4,12 @@ metadata:
   name: "inception-train-job"
 spec:
   replicaSpecs:
-    - replicas: 4
+    - replicas: 2
       tfReplicaType: WORKER
       template:
         spec:
           containers:
-            - image: banzaicloud/tensorflow-inception-example:v0.1
+            - image: banzaicloud/tensorflow-inception-example:v0.18
               name: tensorflow
               command: ["bazel-bin/inception/imagenet_distributed_train"]
               args: ["--batch_size=32", "--num_gpus=0", "--data_dir=/efs/image-data", "--train_dir=/efs/train"]
@@ -19,9 +19,10 @@ spec:
           volumes:
             - name: efs-pvc
               persistentVolumeClaim:
-                claimName: efs
+                claimName: azure-files
+
           restartPolicy: OnFailure
-    - replicas: 2
+    - replicas: 1
       tfReplicaType: PS
   tensorboard:
     logDir: /efs/train
@@ -29,7 +30,7 @@ spec:
     volumes:
       - name: efs-pvc
         persistentVolumeClaim:
-          claimName: efs
+          claimName: azure-files
     volumeMounts:
       - name: efs-pvc
         mountPath: "/efs"

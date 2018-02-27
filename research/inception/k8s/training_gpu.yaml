@@ -1,0 +1,60 @@
+apiVersion: "tensorflow.org/v1alpha1"
+kind: "TfJob"
+metadata:
+  name: "inception-train-job"
+spec:
+  replicaSpecs:
+    - replicas: 2
+      tfReplicaType: WORKER
+      template:
+        spec:
+          containers:
+            - image: banzaicloud/tensorflow-inception-example:v0.18-gpu
+              name: tensorflow
+              command: ["bazel-bin/inception/imagenet_distributed_train"]
+              args: ["--batch_size=32", "--log_device_placement=True", "--data_dir=/efs/image-data", "--train_dir=/efs/train"]
+              volumeMounts:
+                - name: efs-pvc
+                  mountPath: "/efs"
+                - name: bin
+                  mountPath: /usr/local/nvidia/bin
+                - name: lib
+                  mountPath: /usr/local/nvidia/lib64
+                - name: libcuda
+                  mountPath: /usr/lib/x86_64-linux-gnu/libcuda.so.1
+              resources:
+                requests:
+                  alpha.kubernetes.io/nvidia-gpu: 1
+                limits:
+                  alpha.kubernetes.io/nvidia-gpu: 1
+          volumes:
+            - name: efs-pvc
+              persistentVolumeClaim:
+                claimName: azure-files
+            - name: bin
+              hostPath:
+                path: /usr/lib/nvidia-384/bin
+            - name: lib
+              hostPath:
+                path: /usr/lib/nvidia-384
+            - name: libcuda
+              hostPath:
+                path: /usr/lib/x86_64-linux-gnu/libcuda.so.1
+
+          restartPolicy: OnFailure
+    - replicas: 1
+      tfReplicaType: PS
+  tensorboard:
+    logDir: /efs/train
+    serviceType: LoadBalancer
+    volumes:
+      - name: efs-pvc
+        persistentVolumeClaim:
+          claimName: azure-files
+    volumeMounts:
+      - name: efs-pvc
+        mountPath: "/efs"
+  terminationPolicy:
+    chief:
+      replicaName: WORKER
+      replicaIndex: 0
